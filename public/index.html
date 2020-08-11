@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:v-on="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <!-- 引入组件库 -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <style type="text/css">
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-items: center;
+        }
+
+    </style>
+
+</head>
+<body>
+<div class="container">
+        Hello World
+</div>
+
+<div id="app">
+    {{ message }}
+
+    <el-row>
+        <el-col><div class="grid-content bg-purple">
+            基本信息：
+        </div></el-col>
+    </el-row>
+    <el-row>
+        <el-col :span="8">
+            <el-input placeholder="socketid" v-model="current_socketid">
+                <template slot="prepend">current socketid</template>
+            </el-input>
+        </el-col>
+        <el-col :span="4">
+            <el-button type="success" v-on:click="serverInfoSocketId">socketId</el-button>
+        </el-col>
+        <el-col :span="4">
+            <el-button type="success" v-on:click="">namespace</el-button>
+        </el-col>
+        <el-col :span="4">
+            <el-button type="success" v-on:click="serverInfoRooms">rooms</el-button>
+        </el-col>
+        <el-col :span="4">
+            <el-button type="success" v-on:click="serverInfoClients">clients</el-button>
+            <el-button type="success" v-on:click="serverInfoSockets">sockets</el-button>
+            <el-button type="success" v-on:click="serverDebugEmit">Emit</el-button>
+        </el-col>
+    </el-row>
+    <el-row>
+        <el-col><div class="grid-content bg-purple">
+            <br>
+            client 操作：
+        </div></el-col>
+    </el-row>
+    <el-row :gutter="10">
+        <el-col :span="8">
+            <el-input placeholder="socketid" v-model="target_socketid">
+                <template slot="prepend">target socketid</template>
+            </el-input>
+        </el-col>
+        <el-col :span="8">
+            <el-input placeholder="请输入内容" v-model="send_message">
+                <template slot="prepend">发送内容</template>
+            </el-input>
+        </el-col>
+        <el-col :span="8">
+            <el-button type="success" v-on:click="sayUser">say to user</el-button>
+            <el-button type="success" v-on:click="sayUser2">say to user2</el-button>
+        </el-col>
+    </el-row>
+
+    <el-row>
+        <el-col><div class="grid-content bg-purple">
+            <br>rooms 操作：
+        </div></el-col>
+    </el-row>
+    <el-row :gutter="10">
+        <el-col :span="6">
+            <el-input placeholder="请输入内容 Room" v-model="current_room"></el-input>
+        </el-col>
+        <el-col :span="4">
+            <el-button type="success" v-on:click="joinRoom">Join</el-button>
+        </el-col>
+        <el-col :span="4">
+            <el-button type="success" v-on:click="leaveRoom">Leave</el-button>
+        </el-col>
+        <el-col :span="6">
+        </el-col>
+    </el-row>
+    <el-row>
+        <el-col><div class="grid-content bg-purple">
+            <br>rooms 发送：
+        </div></el-col>
+    </el-row>
+    <el-row :gutter="10">
+        <el-col :span="8">
+            <el-input placeholder="请输入内容 Room" v-model="target_room">
+                <template slot="prepend">room </template>
+            </el-input>
+        </el-col>
+        <el-col :span="8">
+            <el-input placeholder="请输入内容" v-model="room_message">
+                <template slot="prepend">发送内容 </template>
+            </el-input>
+        </el-col>
+        <el-col :span="4">
+            <el-button type="success" v-on:click="sayRoom">say to room</el-button>
+        </el-col>
+    </el-row>
+
+    <br><br>
+    <button type="success" v-on:click="message2">message</button>
+    <button type="success" v-on:click="broadcast">发送广播</button>
+    <button type="success" v-on:click="joinRoom">joinRoom</button>
+
+</div>
+
+<script type="module">
+
+
+    var app = new Vue({
+        el: '#app',
+        data: {
+            message: 'Hello Vue!',
+            visible: false,
+            current_socketid: '',
+            send_message: 'hello boy',
+            target_socketid:'',
+            current_room: 'room1',
+            room_message: 'hello room',
+            target_room:'room1',
+        },
+        computed: {
+            room_message_new: function () {
+                return this.room_message + getToken();
+            }
+        },
+        methods: {
+            message2: function(){
+                socket.emit('message', {'token': getToken(), id: '111', context: "this is message"}, function (data) {
+                    console.info('ack',data);
+                });
+            },
+            broadcast: function (elem) {
+                socket.emit('broadcast', {'token': getToken(), id: '222', context: "this is bbbb"});
+            },
+            serverInfoSocketId: function (data) {
+                socket.emit('server-info',{'token': getToken(), 'type':'socketid'},function (data) {
+                    console.info('server-info back',data)
+                })
+            },
+            serverInfoRooms: function (data) {
+                socket.emit('server-info',{'token': getToken(), 'type':'rooms', },function (data) {
+                    console.info('server-info back',data)
+                })
+            },
+            serverInfoClients: function (data) {
+                socket.emit('server-info',{'token': getToken(), 'type':'clients', },function (data) {
+                    console.info('server-info back',data)
+                })
+            },
+            serverInfoSockets: function (data) {
+                socket.emit('server-info',{'token': getToken(), 'type':'sockets', },function (data) {
+                    console.info('server-info back',data)
+                })
+            },
+            serverDebugEmit: function (data) {
+                socket.emit('server-debug',{'token': getToken(), 'type':'emit', },function (data) {
+                    console.info('server-debug back',data)
+                })
+            },
+            joinRoom: function () {
+                let room = this.current_room;
+                socket.emit('join-room',{'token': getToken(), 'type':'join-room','room':room},function (data) {
+                    console.info('join-room back',data)
+                });
+            },
+            leaveRoom: function () {
+                let room = this.current_room;
+                socket.emit('leave-room',{'token': getToken(), 'type':'leave-room','room':room},function (data) {
+                    console.info('leave-room back',data)
+                });
+            },
+            sayUser: function () {
+                let user = this.target_socketid;
+                socket.emit('say-user',{'token': getToken(), 'type':'say-user','user':user, message: this.send_message},function (data) {
+                    console.info('say-user back',data)
+                });
+            },
+            sayUser2: function () {
+                let user = this.target_socketid;
+                socket.emit('say-user2',{'token': getToken(), 'type':'say-user2','user':user, message: this.send_message},function (data) {
+                    console.info('say-user2 back',data)
+                });
+            },
+            sayRoom: function () {
+                let room = this.target_room;
+                socket.emit('say-room',{'token': getToken(), 'type':'say-room','room':room, message: this.room_message},function (data) {
+                    console.info('say-room back',data)
+                });
+            },
+            roomClient: function () {
+
+            },
+        }
+    });
+
+
+    const getToken = function () {
+        var timestamp = (new Date()).valueOf();
+        return timestamp;
+    };
+
+
+    var socket = io();
+
+    // Log a message
+    const log = (message, options) => {
+        //var $el = $('<li>').addClass('log').text(message);
+        //addMessageElement($el, options);
+        console.info(message,options);
+    };
+
+    // Socket events
+
+    // Whenever the server emits 'login', log the login message
+    socket.on('connect', () => {
+        //connected = true;
+        console.info('connect',socket.id);
+        console.info('socket',socket);
+        app.current_socketid = socket.id;
+    });
+
+
+    // Whenever the server emits 'login', log the login message
+    socket.on('login', (data) => {
+        connected = true;
+        // Display the welcome message
+        var message = "Welcome to Socket.IO Chat – ";
+
+        console.info('login receive',data);
+
+    });
+
+    // Whenever the server emits 'login', log the login message
+    socket.on('message', (data, cb) => {
+        console.info('message receive', data);
+        if (cb){
+            console.info('message callback');
+            cb(data);
+        }
+    });
+
+    // Whenever the server emits 'login', log the login message
+    socket.on('server-debug', (data, cb) => {
+        console.info('server-debug receive',data);
+        if(cb)
+            cb(data)
+    });
+
+    // Whenever the server emits 'login', log the login message
+    socket.on('broadcast', (data) => {
+        console.info('broadcast receive',data);
+    });
+
+
+    socket.on('disconnect', () => {
+        log('you have been disconnected');
+    });
+
+    socket.on('reconnect', () => {
+        log('you have been reconnected');
+        //if (username) {
+        //    socket.emit('add user', username);
+        //}
+    });
+
+    socket.on('reconnect_error', () => {
+        log('attempt to reconnect has failed');
+    });
+
+
+
+</script>
+
+</body>
+</html>

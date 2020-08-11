@@ -9,6 +9,7 @@
     <!-- 引入组件库 -->
     <script src="https://unpkg.com/element-ui/lib/index.js"></script>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="./main.js"></script>
     <link rel="stylesheet" href="style.css">
     <style type="text/css">
 
@@ -36,24 +37,26 @@
         </div></el-col>
     </el-row>
     <el-row>
-        <el-col :span="8">
+        <el-col :span="6">
             <el-input placeholder="socketid" v-model="current_socketid">
                 <template slot="prepend">current socketid</template>
             </el-input>
         </el-col>
-        <el-col :span="4">
-            <el-button type="success" v-on:click="serverInfoSocketId">socketId</el-button>
+        <el-col :span="2">
+            <el-button type="primary" v-on:click="serverInfoSocketId">socketId</el-button>
         </el-col>
-        <el-col :span="4">
+        <el-col :span="16">
             <el-button type="success" v-on:click="">namespace</el-button>
-        </el-col>
-        <el-col :span="4">
             <el-button type="success" v-on:click="serverInfoRooms">rooms</el-button>
-        </el-col>
-        <el-col :span="4">
-            <el-button type="success" v-on:click="serverInfoClients">clients</el-button>
+            <!-- client-->
+            <el-button type="warning" data-method="clients" v-on:click="serverInfoClients">clients</el-button>
+            <el-button type="warning" data-method="clients2" v-on:click="serverInfoClients">clients2</el-button>
+            <el-button type="warning" data-method="clients-namespace" data-namespace="chat1" v-on:click="serverInfoClients">clients-namespace</el-button>
+            <el-button type="warning" data-method="clients-room1" data-room="room1" v-on:click="serverInfoClients">clients-room1</el-button>
+            <el-button type="warning" data-method="clients-room2" data-room="room2" v-on:click="serverInfoClients">clients-room2</el-button>
+            <!-- client-->
             <el-button type="success" v-on:click="serverInfoSockets">sockets</el-button>
-            <el-button type="success" v-on:click="serverDebugEmit">Emit</el-button>
+            <el-button type="danger" v-on:click="serverDebugEmit">Emit</el-button>
         </el-col>
     </el-row>
     <el-row>
@@ -63,12 +66,12 @@
         </div></el-col>
     </el-row>
     <el-row :gutter="10">
-        <el-col :span="8">
+        <el-col :span="6">
             <el-input placeholder="socketid" v-model="target_socketid">
                 <template slot="prepend">target socketid</template>
             </el-input>
         </el-col>
-        <el-col :span="8">
+        <el-col :span="6">
             <el-input placeholder="请输入内容" v-model="send_message">
                 <template slot="prepend">发送内容</template>
             </el-input>
@@ -90,8 +93,6 @@
         </el-col>
         <el-col :span="4">
             <el-button type="success" v-on:click="joinRoom">Join</el-button>
-        </el-col>
-        <el-col :span="4">
             <el-button type="success" v-on:click="leaveRoom">Leave</el-button>
         </el-col>
         <el-col :span="6">
@@ -125,7 +126,7 @@
 
 </div>
 
-<script type="module">
+<script type="text/javascript">
 
 
     var app = new Vue({
@@ -164,9 +165,19 @@
                     console.info('server-info back',data)
                 })
             },
-            serverInfoClients: function (data) {
-                socket.emit('server-info',{'token': getToken(), 'type':'clients', },function (data) {
-                    console.info('server-info back',data)
+            serverInfoClients: function (e) {
+                let method = getVueDataset(e,'method');
+                let namespace = getVueDataset(e,'namespace');
+                let room = getVueDataset(e,'room');
+                let server_info_data = {'token': getToken(), 'type': method, };
+                if (namespace)
+                    server_info_data.namespace = namespace;
+
+                if (room)
+                    server_info_data.room = room;
+
+                socket.emit('server-info', server_info_data, function (data) {
+                    console.info('server-info back', data)
                 })
             },
             serverInfoSockets: function (data) {
@@ -216,13 +227,10 @@
     });
 
 
-    const getToken = function () {
-        var timestamp = (new Date()).valueOf();
-        return timestamp;
-    };
 
 
-    var socket = io();
+
+    var socket = io('localhost:3000');
 
     // Log a message
     const log = (message, options) => {

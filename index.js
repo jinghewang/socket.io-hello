@@ -35,6 +35,8 @@ io.on('connection', (socket) => {
 
         var result = {};
         let type = data.type || 'server';
+        let namespace = data.namespace || '/';
+        let room = data.namespace || '';
         switch(type) {
             case 'socketid':
                 result = socket.id;
@@ -80,6 +82,46 @@ io.on('connection', (socket) => {
                         callback({'type': type, 'data': result});
                 });
 
+                //console.info(result,result);
+                break;
+
+            case 'clients2':
+
+                io.of('/').clients((error, clients) => {
+                    if (error)
+                        throw error;
+                    console.log('room1',clients); // => [Anw2LatarvGVVXEIAAAD]
+                });
+                //console.info(result,result);
+                break;
+
+            case 'clients-namespace':
+
+                io.of('/chat').clients((error, clients) => {
+                    if (error)
+                        throw error;
+                    console.log('room1',clients); // => [Anw2LatarvGVVXEIAAAD]
+                });
+                //console.info(result,result);
+                break;
+
+            case 'clients-room1':
+
+                io.of('/').in('room1').clients((error, clients) => {
+                    if (error)
+                        throw error;
+                    console.log('room1',clients); // => [Anw2LatarvGVVXEIAAAD]
+                });
+                //console.info(result,result);
+                break;
+
+            case 'clients-room2':
+
+                io.in('room2').clients((error, clients) => {
+                    if (error)
+                        throw error;
+                    console.log('room1',clients); // => [Anw2LatarvGVVXEIAAAD]
+                });
                 //console.info(result,result);
                 break;
 
